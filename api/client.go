@@ -42,6 +42,8 @@ const (
 	EnvVaultClientCert       = "VAULT_CLIENT_CERT"
 	EnvVaultClientKey        = "VAULT_CLIENT_KEY"
 	EnvVaultClientTimeout    = "VAULT_CLIENT_TIMEOUT"
+	EnvVaultTPMPath          = "VAULT_TPM_PATH"
+	EnvVaultTPMDebug         = "VAULT_TPM_DEBUG"
 	EnvVaultHeaders          = "VAULT_HEADERS"
 	EnvVaultSRVLookup        = "VAULT_SRV_LOOKUP"
 	EnvVaultSkipVerify       = "VAULT_SKIP_VERIFY"
@@ -232,8 +234,16 @@ type TLSConfig struct {
 	// ClientCert is the path to the certificate for Vault communication
 	ClientCert string
 
-	// ClientKey is the path to the private key for Vault communication
+	// ClientKey is the path to the private key for Vault communication.
+	// Supports both standard private keys (RSA, ECDSA) and TSS2-formatted TPM keys.
 	ClientKey string
+
+	// TPMPath is the path to the TPM device for TSS2 key operations.
+	// Defaults to "/dev/tpmrm0" if not specified and TSS2 keys are used.
+	TPMPath string
+
+	// EnableTPMDebug enables debug logging for TPM key operations
+	EnableTPMDebug bool
 
 	// TLSServerName, if set, is used to set the SNI host when connecting via
 	// TLS.
@@ -312,7 +322,13 @@ func (c *Config) configureTLS(t *TLSConfig) error {
 	switch {
 	case t.ClientCert != "" && t.ClientKey != "":
 		var err error
-		clientCert, err = tls.LoadX509KeyPair(t.ClientCert, t.ClientKey)
+		// Use enhanced key loader that supports both standard and TSS2 keys
+		tss2Loader := NewTSS2KeyLoader()
+		if t.TPMPath != "" {
+			tss2Loader.TPMPath = t.TPMPath
+		}
+		tss2Loader.Debug = t.EnableTPMDebug
+		clientCert, err = tss2Loader.LoadX509KeyPairWithTSS2Support(t.ClientCert, t.ClientKey)
 		if err != nil {
 			return err
 		}
@@ -382,6 +398,8 @@ func (c *Config) ReadEnvironment() error {
 	var envCAPath string
 	var envClientCert string
 	var envClientKey string
+	var envTPMPath string
+	var envTPMDebug bool
 	var envClientTimeout time.Duration
 	var envInsecure bool
 	var envTLSServerName string
@@ -419,6 +437,16 @@ func (c *Config) ReadEnvironment() error {
 	}
 	if v := os.Getenv(EnvVaultClientKey); v != "" {
 		envClientKey = v
+	}
+	if v := os.Getenv(EnvVaultTPMPath); v != "" {
+		envTPMPath = v
+	}
+	if v := os.Getenv(EnvVaultTPMDebug); v != "" {
+		var err error
+		envTPMDebug, err = strconv.ParseBool(v)
+		if err != nil {
+			return fmt.Errorf("could not parse %s", EnvVaultTPMDebug)
+		}
 	}
 	if v := os.Getenv(EnvRateLimit); v != "" {
 		rateLimit, burstLimit, err := parseRateLimit(v)
@@ -474,13 +502,15 @@ func (c *Config) ReadEnvironment() error {
 
 	// Configure the HTTP clients TLS configuration.
 	t := &TLSConfig{
-		CACert:        envCACert,
-		CACertBytes:   envCACertBytes,
-		CAPath:        envCAPath,
-		ClientCert:    envClientCert,
-		ClientKey:     envClientKey,
-		TLSServerName: envTLSServerName,
-		Insecure:      envInsecure,
+		CACert:         envCACert,
+		CACertBytes:    envCACertBytes,
+		CAPath:         envCAPath,
+		ClientCert:     envClientCert,
+		ClientKey:      envClientKey,
+		TPMPath:        envTPMPath,
+		EnableTPMDebug: envTPMDebug,
+		TLSServerName:  envTLSServerName,
+		Insecure:       envInsecure,
 	}
 
 	c.modifyLock.Lock()

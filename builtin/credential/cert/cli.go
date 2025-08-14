@@ -50,14 +50,33 @@ Usage: vault login -method=cert [CONFIG K=V...]
   flags are included with the "vault login" command, NOT as configuration to the
   auth method.
 
-  Authenticate using a local client certificate:
+  Both standard private keys (RSA, ECDSA) and TSS2-formatted TPM keys are supported.
+  The system automatically detects the key format and uses the appropriate authentication method.
+
+  Authenticate using a local client certificate with standard private key:
 
       $ vault login -method=cert -client-cert=cert.pem -client-key=key.pem
+
+  Authenticate using a local client certificate with TSS2 TPM key:
+
+      $ vault login -method=cert -client-cert=cert.pem -client-key=tpm-key.pem
+
+  For TSS2 keys, ensure the TPM device is accessible (typically /dev/tpmrm0).
 
 Configuration:
 
   name=<string>
       Certificate role to authenticate against.
+
+TSS2/TPM Key Support:
+
+  TSS2-formatted private keys are automatically detected and handled using TPM hardware.
+  This provides enhanced security by keeping private keys secured within the TPM.
+  
+  Requirements for TSS2 keys:
+  - TPM 2.0 device available (usually /dev/tpmrm0)
+  - TSS2 PRIVATE KEY format in PEM file
+  - Appropriate TPM permissions for the vault process
 `
 
 	return strings.TrimSpace(help)
