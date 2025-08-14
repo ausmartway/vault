@@ -21,9 +21,9 @@ func TestTSS2KeyLoader_isTSS2Key(t *testing.T) {
 		expected bool
 	}{
 		{
-			name:    "TSS2 Private Key",
-			keyType: "TSS2 PRIVATE KEY",
-			keyData: "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg",
+			name:     "TSS2 Private Key",
+			keyType:  "TSS2 PRIVATE KEY",
+			keyData:  "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg",
 			expected: true,
 		},
 		{
@@ -38,9 +38,9 @@ IbJP3Y6SQ8d8eZGh7OIXwQ8h7+7KjjK5Y5n6WQ==`,
 			expected: false,
 		},
 		{
-			name:    "EC Private Key",
-			keyType: "EC PRIVATE KEY",
-			keyData: "MHcCAQEEIGJA03Q2F3CgGpAFOcRxhf3f4Z4K9XJpDHKPaLgfnHhm",
+			name:     "EC Private Key",
+			keyType:  "EC PRIVATE KEY",
+			keyData:  "MHcCAQEEIGJA03Q2F3CgGpAFOcRxhf3f4Z4K9XJpDHKPaLgfnHhm",
 			expected: false,
 		},
 		{
@@ -64,7 +64,7 @@ t5n7UiO3I3r3hPpSZaIbJP3Y6SQ8d8eZGh7OIXwQ8h7+7KjjK5Y5n6WQIDAQABAo`,
 
 			// Write PEM data
 			pemData := "-----BEGIN " + tt.keyType + "-----\n" + tt.keyData + "\n-----END " + tt.keyType + "-----\n"
-			err := os.WriteFile(keyFile, []byte(pemData), 0600)
+			err := os.WriteFile(keyFile, []byte(pemData), 0o600)
 			if err != nil {
 				t.Fatalf("Failed to write test key file: %v", err)
 			}
@@ -105,12 +105,12 @@ BAMMDnRlc3QuZXhhbXBsZS5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK
 AoIBAQDh/nCDmXaEqxN416b9XjV8acmbqA52uPzKbesWQSNZPZu0+JEO
 -----END CERTIFICATE-----`
 
-		err := os.WriteFile(keyFile, []byte(rsaKeyPEM), 0600)
+		err := os.WriteFile(keyFile, []byte(rsaKeyPEM), 0o600)
 		if err != nil {
 			t.Fatalf("Failed to write key file: %v", err)
 		}
 
-		err = os.WriteFile(certFile, []byte(certPEM), 0644)
+		err = os.WriteFile(certFile, []byte(certPEM), 0o644)
 		if err != nil {
 			t.Fatalf("Failed to write cert file: %v", err)
 		}
@@ -145,12 +145,12 @@ BAMMDnRlc3QuZXhhbXBsZS5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK
 AoIBAQDh/nCDmXaEqxN416b9XjV8acmbqA52uPzKbesWQSNZPZu0+JEO
 -----END CERTIFICATE-----`
 
-		err := os.WriteFile(keyFile, []byte(tss2KeyPEM), 0600)
+		err := os.WriteFile(keyFile, []byte(tss2KeyPEM), 0o600)
 		if err != nil {
 			t.Fatalf("Failed to write key file: %v", err)
 		}
 
-		err = os.WriteFile(certFile, []byte(certPEM), 0644)
+		err = os.WriteFile(certFile, []byte(certPEM), 0o644)
 		if err != nil {
 			t.Fatalf("Failed to write cert file: %v", err)
 		}
@@ -168,15 +168,15 @@ AoIBAQDh/nCDmXaEqxN416b9XjV8acmbqA52uPzKbesWQSNZPZu0+JEO
 
 func TestNewTSS2KeyLoader(t *testing.T) {
 	loader := NewTSS2KeyLoader()
-	
+
 	if loader == nil {
 		t.Fatal("NewTSS2KeyLoader returned nil")
 	}
-	
+
 	if loader.TPMPath != "/dev/tpmrm0" {
 		t.Errorf("Expected default TPMPath to be '/dev/tpmrm0', got '%s'", loader.TPMPath)
 	}
-	
+
 	if loader.Debug != false {
 		t.Errorf("Expected default Debug to be false, got %v", loader.Debug)
 	}
